@@ -42,29 +42,29 @@ st.markdown(
     " Cycle)**에 미치는 영향을 시계열 데이터로 분석합니다."
 )
 
-# -----------------------------------------
-# 가상 데이터셋 생성 (실제 기상청 및 국립생물자원관 데이터 구조)
-# -----------------------------------------
-# 1. 제비 첫 도래일 (연도별로 빨라지는 추세, 숫자는 1월 1일 기준 경과 일수)
+import numpy as np  # 맨 위에 없다면 추가
+
+# 글로벌 다국가 데이터 생성 (한국 + 다른 나라들)
+np.random.seed(42)
 years = list(range(1995, 2026))
-# 시간이 갈수록 도래일이 빨라짐 (날짜가 작아짐)
-swallow_days = [
-    95 - (y - 1995) * 0.5 + (y % 3) * 2 for y in years
-]  # 약간의 변동성 부여
-cherry_days = [
-    90 - (y - 1995) * 0.7 + (y % 4) * 1.5 for y in years
-]  # 벚꽃 개화일 (빨라짐)
-cicada_days = [
-    185 - (y - 1995) * 0.4 + (y % 2) * 2 for y in years
-]  # 매미 첫 울음소리 (빨라짐)
+countries = ["South Korea", "Japan", "United States", "United Kingdom"]
 
-df_phenology = pd.DataFrame({
-    "Year": years,
-    "Swallow_Arrival_Day": swallow_days,  # 제비 도래일 (Day of Year)
-    "Cherry_Blossom_Day": cherry_days,  # 벚꽃 개화일 (Day of Year)
-    "Cicada_Cry_Day": cicada_days,  # 매미 첫 울음일 (Day of Year)
-})
+data_list = []
+for country in countries:
+  shift_rate = 0.6 if country in ["South Korea", "Japan"] else 0.45
+  temp_rate = 0.05 if country in ["South Korea", "Japan"] else 0.04
 
+  for y in years:
+    spring_day = 100 - (y - 1995) * shift_rate + np.random.normal(0, 2)
+    avg_temp = 10.0 + (y - 1995) * temp_rate + np.random.normal(0, 0.3)
+    data_list.append({
+        "Year": y,
+        "Country": country,
+        "Spring_Event_Day": round(spring_day, 1),
+        "Avg_Temperature": round(avg_temp, 2),
+    })
+
+df_global = pd.DataFrame(data_list)
 # 탭 메뉴 구성
 tab1, tab2, tab3 = st.tabs([
     "📈 종별 출현일 변화 시계열 분석",
