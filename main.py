@@ -1,6 +1,7 @@
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import numpy as np
 
 # 페이지 설정
 st.set_page_config(
@@ -42,7 +43,6 @@ st.markdown(
     " Cycle)**에 미치는 영향을 시계열 데이터로 분석합니다."
 )
 
-import numpy as np  # 맨 위에 없다면 추가
 
 # 글로벌 다국가 데이터 생성 (한국 + 다른 나라들)
 np.random.seed(42)
