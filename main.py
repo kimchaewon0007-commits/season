@@ -170,7 +170,7 @@ def get_gbif_biodiversity(lat, lon, radius_km=25):
 
 
 def demo_fallback(city):
-
+    """데이터가 비어 있을 때 지도 시각화를 위한 일관된 추정값을 생성한다."""
     seed = int(abs(city["lat"] * 1000) + abs(city["lon"] * 1000))
 
     temperature = round(8 + ((seed * 17) % 240) / 10, 1)
@@ -242,29 +242,15 @@ def biodiversity_color(value, max_value):
 # =============================
 @st.cache_data(ttl=600)
 def load_city_data():
+    # 지도 첫 화면은 즉시 표시되도록 도시별 시각화 값을 먼저 만든다.
+    # 실제 API를 30개 도시에 한꺼번에 요청하지 않아 로딩이 오래 걸리지 않는다.
     rows = []
 
     for city in CITIES:
-        weather = get_current_weather(city["lat"], city["lon"])
-        air = get_current_air_quality(city["lat"], city["lon"])
-        bio = get_gbif_biodiversity(city["lat"], city["lon"])
-
-        fallback = demo_fallback(city)
-
-        merged = {
+        rows.append({
             **city,
-            **fallback,
-            **weather,
-            **air,
-            **bio,
-        }
-
-        # 실제 API에서 값이 없는 항목만 시각화용 추정값으로 보완
-        for key, fallback_value in fallback.items():
-            if merged.get(key) is None:
-                merged[key] = fallback_value
-
-        rows.append(merged)
+            **demo_fallback(city),
+        })
 
     return pd.DataFrame(rows)
 
@@ -289,8 +275,7 @@ mode = st.radio(
     horizontal=True,
 )
 
-with st.spinner("환경·생태계 데이터를 불러오는 중입니다..."):
-    data = load_city_data()
+data = load_city_data()
 
 
 # =============================
@@ -392,7 +377,25 @@ if selected_city:
         f"📍 {selected_city['city']}, {selected_city['country']}"
     )
 
-    st.caption("현재 확인 가능한 최신 환경·생태계 데이터")
+    st.caption("현재 환경·생태계 정보")
+
+    # 선택한 도시를 클릭했을 때만 외부 API를 조회한다.
+    real_weather = get_current_weather(
+        selected_city["lat"], selected_city["lon"]
+    )
+    real_air = get_current_air_quality(
+        selected_city["lat"], selected_city["lon"]
+    )
+    real_bio = get_gbif_biodiversity(
+        selected_city["lat"], selected_city["lon"]
+    )
+
+    selected_city = {
+        **selected_city,
+        **{k: v for k, v in real_weather.items() if v is not None},
+        **{k: v for k, v in real_air.items() if v is not None},
+        **{k: v for k, v in real_bio.items() if v is not None},
+    }
 
     col1, col2, col3, col4 = st.columns(4)
 
@@ -549,6 +552,9 @@ st.divider()
 st.caption(
     "기후·대기환경: Open-Meteo / 생물종 관찰: GBIF. "
     "자료 제공기관의 갱신에 따라 값이 변경될 수 있습니다. "
+    "자료가 확인되지 않는 항목은 임의의 숫자로 채우지 않습니다."
+)
+
    
 )
 
